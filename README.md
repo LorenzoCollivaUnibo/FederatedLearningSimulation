@@ -104,4 +104,4 @@ Sparse categorical accuracy modello globale: 0.9409000277519226
 Loss modello globale: 0.31437695026397705
 Sparse categorical accuracy modello globale: 0.9409000277519226
 
-![](percorso/del/grafico.png)
+![](test_accuracy_rounds1.png)
