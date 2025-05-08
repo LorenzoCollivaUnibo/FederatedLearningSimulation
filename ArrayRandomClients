@@ -1,6 +1,8 @@
 import tensorflow as tf
 import os
 import random
+import matplotlib.pyplot as plt
+
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0" #per disattivare ONEDNN
 print(tf.__version__)
 
@@ -42,10 +44,7 @@ ran = 0
 
 for nclient in range(n_client - 1):
     random_num_batch = random.randint(ran, num_batch_train_elements - n_client + nclient )
-    print("estremi: ", ran, num_batch_train_elements - n_client + nclient)
-    print("r_num_batch: ", random_num_batch)
     t = random_num_batch - ran + 1
-    print("take: ", t)
     ds = ds_train.skip(ran).take(t)
     array_ds_train.append(ds)
     ran = random_num_batch + 1
@@ -53,9 +52,8 @@ for nclient in range(n_client - 1):
 ds = ds_train.skip(ran)
 array_ds_train.append(ds)
 
-
-for client in array_ds_train:
-    print(len(client))
+for i,client in enumerate(array_ds_train):
+    print(f"client {i} num batch: {len(client)}")
 
 
 
@@ -76,10 +74,13 @@ def create_model():
     return model
 
 
-rounds_number = 5
+rounds_number = 10
 
 global_model = create_model()
 client_models = []
+rounds = []
+accuracy = []
+
 
 for client in range(n_client):
     client_models.append(create_model())
@@ -88,7 +89,6 @@ for client in range(n_client):
 loss, s_cat_acc = global_model.evaluate(ds_test, verbose=1)
 print(f"Loss modello globale: {loss}")
 print(f"Sparse categorical accuracy modello globale: {s_cat_acc}")
-
 
 for r in range(rounds_number):
 
@@ -101,18 +101,30 @@ for r in range(rounds_number):
     lunghezze = [len(ds) for ds in array_ds_train]
     totale = sum(lunghezze)
 
-    print("totale: ", totale)
-    for l in lunghezze:
-        print("lunghezze: ", l)
-
+    #AGGREGAZIONE
     new_global_weight = [
         sum((lunghezze[n_c] / totale) * weights[n_c][p] for n_c in range(len(weights)))
         for p in range(len(weights[0])) #tutti i pesi hanno stessa dimensione (pesi + bias) [livelli]
     ]
 
     global_model.set_weights(new_global_weight)
-
+    loss, s_cat_acc = global_model.evaluate(ds_test, verbose=1)
+    rounds.append(r+1)
+    accuracy.append(s_cat_acc)
 
 loss, s_cat_acc = global_model.evaluate(ds_test, verbose=1)
 print(f"Loss modello globale: {loss}") #indica quanto sbaglia e con quanta sicurezza
 print(f"Sparse categorical accuracy modello globale: {s_cat_acc}") #percentuale di accuratezza della risposta
+
+
+
+
+plt.figure(figsize=(8, 5))
+plt.plot(rounds, accuracy, marker='o', linestyle='-', color='blue', label='Test Accuracy')
+plt.xlabel('Round di Federated Learning')
+plt.ylabel('Sparse Categorical Accuracy (%)')
+plt.title(f"Andamento della Test Accuracy nel tempo {n_client} Random client")
+plt.grid(True)
+plt.legend()
+plt.savefig('test_accuracy_rounds.png')
+plt.show()
