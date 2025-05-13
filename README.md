@@ -434,6 +434,12 @@ Sparse categorical accuracy modello globale: 0.9401999711990356
 
 
 
+
+
+
+
+Di seguito riporto i grafici di 14 test con un numero di client che varia per ogni test:
+
 ![Grafico4](chart1.png)
 ![Grafico5](chart2.png)
 ![Grafico6](chart3.png)
@@ -448,7 +454,5 @@ Sparse categorical accuracy modello globale: 0.9401999711990356
 ![Grafico15](chart12.png)
 ![Grafico16](chart13.png)
 ![Grafico17](chart14.png)
-![Grafico18](chart15.png)
 
-
-
+Dai grafici emerge che nell'apprendimento federato con pochi client i risultati sono molto simile e le curve di apprendimento sono più o meno costanti (ovviamente il test con 2 client resta sempre la curva più costante delle tre) e raggiungono alti tassi di accuratezza che si aggirano circa al 94%. Ciò che rende però interessanti questi test è che con l'aumentare del numero di client, per la seconda e terza versione, otteniamo risultati diversi. Nella seconda versione il numero di batch per client è equo tra tutti i client, e di conseguenza diminuisce sempre di più, all'aumentare del numero di client, mentre per la seconda versione del codice di simulazione di Federate Learning, il Set di dati è suddiviso randomicamente tra i vari client (più realistico) il che porta ad avere client con un numero elevato di batch, come 200/300 batch sui 469 batch totali per alcuni, ed altri client con anche 1 solo batch.  Al netto di questa suddivisione come si nota soiprattutto negli ultimi grafici, l'apprendimento del modello globale è più elevato quando sono presenti client con un elevato numero di batch, e di conseguenza la seconda versione di Federate Learning risulta come meno accurata rispetto alla terza, poichè con un numero elevato di client con un numero medio/basso di batch l'apprendimento del modello globale, e di conseguenza l'accuratezza del modello è peggiore rispetto, all'apprendimento con anche un solo client con un numero elevato di batch che consente una fase di training migliore e di conseguenza permette un update al center model più preciso ed efficace, dato che ogni client contribuisce con al calcolo dei nuovi weights in base al numero di batch che tratta (media pesata).
