@@ -103,7 +103,7 @@ Sparse categorical accuracy modello globale: 0.9409000277519226
 Loss modello globale: 0.31437695026397705
 Sparse categorical accuracy modello globale: 0.9409000277519226
 
-![Grafico1](test_accuracy_rounds1.png)
+<img src="test_accuracy_rounds1.png" width="500" height="300" />
 
 
 
@@ -255,7 +255,7 @@ Loss modello globale: 0.7744328379631042
 
 Sparse categorical accuracy modello globale: 0.9412999749183655
 
-![Grafico2](test_accuracy_rounds2.png)
+<img src="test_accuracy_rounds2.png" width="500" height="300" />
 
 
 3 Risultati dell'esecuzione del codice di Federate Learning con 5 client che si suddividono equamente il dataset
@@ -428,7 +428,7 @@ Loss modello globale: 0.4523411989212036
 
 Sparse categorical accuracy modello globale: 0.9401999711990356
 
-![Grafico3](test_accuracy_rounds3.png)
+<img src="test_accuracy_rounds3.png" width="500" height="300" />
 
 
 
@@ -440,19 +440,21 @@ Sparse categorical accuracy modello globale: 0.9401999711990356
 
 Di seguito riporto i grafici di 14 test con un numero di client che varia per ogni test:
 
-![Grafico4](chart1.png)
-![Grafico5](chart2.png)
-![Grafico6](chart3.png)
-![Grafico7](chart4.png)
-![Grafico8](chart5.png)
-![Grafico9](chart6.png)
-![Grafico10](chart7.png)
-![Grafico11](chart8.png)
-![Grafico12](chart9.png)
-![Grafico13](chart10.png)
-![Grafico14](chart11.png)
-![Grafico15](chart12.png)
-![Grafico16](chart13.png)
-![Grafico17](chart14.png)
+<p float="left">
+  <img src="chart1.png" width="500" height="300" />
+  <img src="chart2.png" width="500" height="300" />
+  <img src="chart3.png" width="500" height="300" />
+  <img src="chart4.png" width="500" height="300" />
+  <img src="chart5.png" width="500" height="300" />
+  <img src="chart6.png" width="500" height="300" />
+  <img src="chart7.png" width="500" height="300" />
+  <img src="chart8.png" width="500" height="300" />
+  <img src="chart9.png" width="500" height="300" />
+  <img src="chart10.png" width="500" height="300" />
+  <img src="chart11.png" width="500" height="300" />
+  <img src="chart12.png" width="500" height="300" />
+  <img src="chart13.png" width="500" height="300" />
+  <img src="chart14.png" width="500" height="300" />
+</p>
 
 Dai grafici emerge che nell'apprendimento federato con pochi client i risultati sono molto simile e le curve di apprendimento sono più o meno costanti (ovviamente il test con 2 client resta sempre la curva più costante delle tre) e raggiungono alti tassi di accuratezza che si aggirano circa al 94%. Ciò che rende però interessanti questi test è che con l'aumentare del numero di client, per la seconda e terza versione, otteniamo risultati diversi. Nella seconda versione il numero di batch per client è equo tra tutti i client, e di conseguenza diminuisce sempre di più, all'aumentare del numero di client, mentre per la seconda versione del codice di simulazione di Federate Learning, il Set di dati è suddiviso randomicamente tra i vari client (più realistico) il che porta ad avere client con un numero elevato di batch, come 200/300 batch sui 469 batch totali per alcuni, ed altri client con anche 1 solo batch.  Al netto di questa suddivisione come si nota soiprattutto negli ultimi grafici, l'apprendimento del modello globale è più elevato quando sono presenti client con un elevato numero di batch, e di conseguenza la seconda versione di Federate Learning risulta come meno accurata rispetto alla terza, poichè con un numero elevato di client con un numero medio/basso di batch l'apprendimento del modello globale, e di conseguenza l'accuratezza del modello è peggiore rispetto, all'apprendimento con anche un solo client con un numero elevato di batch che consente una fase di training migliore e di conseguenza permette un update al center model più preciso ed efficace, dato che ogni client contribuisce con al calcolo dei nuovi weights in base al numero di batch che tratta (media pesata).
