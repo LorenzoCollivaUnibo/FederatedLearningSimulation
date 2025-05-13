@@ -434,3 +434,21 @@ Sparse categorical accuracy modello globale: 0.9401999711990356
 
 
 
+![Grafico4](chart1.png)
+![Grafico5](chart2.png)
+![Grafico6](chart3.png)
+![Grafico7](chart4.png)
+![Grafico8](chart5.png)
+![Grafico9](chart6.png)
+![Grafico10](chart7.png)
+![Grafico11](chart8.png)
+![Grafico12](chart9.png)
+![Grafico13](chart10.png)
+![Grafico14](chart11.png)
+![Grafico15](chart12.png)
+![Grafico16](chart13.png)
+![Grafico17](chart14.png)
+![Grafico18](chart15.png)
+
+
+
