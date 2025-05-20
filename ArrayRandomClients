@@ -26,14 +26,7 @@ n_client = int(input("Inserisci il numero di client: "))
 print("n_client: ", n_client)
 
 
-#SUDDIVIDO IN TERMINI DI BATCH
 num_batch_train_elements = len(ds_train)
-div_train = num_batch_train_elements / n_client
-
-if div_train.is_integer():
-    div_train = int(div_train)
-else: div_train = int(div_train) + 1
-print("num_batch_train_elements: ", num_batch_train_elements)
 
 
 #NON divido il ds_test (serve per evaluate)
