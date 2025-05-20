@@ -1,0 +1,179 @@
+import tensorflow as tf
+import os
+import random
+import matplotlib.pyplot as plt
+
+
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0" #per disattivare ONEDNN
+print(tf.__version__)
+
+
+
+(x_train, y_train), (x_test, y_test)= tf.keras.datasets.mnist.load_data(path='mnist.npz')
+assert x_train.shape == (60000, 28, 28)  #60000 immagini 28x28
+assert y_train.shape == (60000,)         #60000 label
+assert x_test.shape == (10000, 28, 28)   #10000 immagini 28x28
+assert y_test.shape == (10000,)          #10000 label
+
+
+ds_train = tf.data.Dataset.from_tensor_slices((x_train, y_train))  #crea un dataset dove ogni elemento è una tupla (x[i], y[i]) per il ds TRAIN
+ds_test = tf.data.Dataset.from_tensor_slices((x_test, y_test))     #crea un dataset dove ogni elemento è una tupla (x[i], y[i]) per il ds TEST
+
+ds_train = ds_train.batch(128)
+ds_test = ds_test.batch(128)
+
+
+n_client = int(input("Inserisci il numero di client: "))
+print("n_client: ", n_client)
+num_batch_train_elements = len(ds_train)
+
+#NON divido il ds_test (serve per evaluate)
+array_ds_train = []
+ds = 0
+i = 0
+ran = 0
+
+for nclient in range(n_client - 1):
+    random_num_batch = random.randint(ran, num_batch_train_elements - n_client + nclient )
+    t = random_num_batch - ran + 1
+    ds = ds_train.skip(ran).take(t)
+    array_ds_train.append(ds)
+    ran = random_num_batch + 1
+
+ds = ds_train.skip(ran)
+array_ds_train.append(ds)
+
+for i,client in enumerate(array_ds_train):
+    print(f"client {i} num batch: {len(client)}")
+
+
+
+#CREO E ADDESTRO IL MODELLO
+#costruzione modello (rete neurale contenuta in model)
+def create_model():
+    model = tf.keras.models.Sequential([ #modello sequenziale (ogni layer riceve l'output del layer precedente) in keras
+        tf.keras.layers.Input(shape=(28, 28)), #appiattisce l'input (immagine di dimensioni MNIST matrice 28x28) in un vettore unidimensionale di 784 elementi
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(128, activation='relu'), #crea uno strato denso (connesso con il layer precedente) di 128 nodi e come funzione di attivazione la ReLU
+        tf.keras.layers.Dense(10) #crea un altro strato denso con 10 nodi (classi finali del ds), no funzione di attivazione è l'output
+    ])
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(0.001),
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),   #Softmax trasforma i logits in probabilità
+        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
+    )
+    return model
+
+
+rounds_number = 10
+
+p_rate = [0.1, 0.2, 0.5, 1]
+
+
+client1 = 0
+client2 = 0
+client3 = 0
+client4 = 0
+rounds1 = []
+rounds2 = []
+rounds3 = []
+rounds4 = []
+accuracy1 = []
+accuracy2 = []
+accuracy3 = []
+accuracy4 = []
+
+
+
+
+
+for pr in p_rate:
+
+    global_model = create_model()
+    client_models = []
+    rounds = []
+    accuracy = []
+
+    n_client_p = int(n_client * pr)
+    print(pr, n_client_p)
+
+    for client in range(n_client_p):
+        client_models.append(create_model())
+
+    loss, s_cat_acc = global_model.evaluate(ds_test, verbose=1)
+    print(f"Loss modello globale: {loss}")
+    print(f"Sparse categorical accuracy modello globale: {s_cat_acc}")
+
+    for r in range(rounds_number):
+
+        print(f"Round {r+1}")
+        array_ds_train_copy = array_ds_train.copy()
+        lung = []
+        tot = 0
+        
+        
+        for i,client_model in enumerate(client_models):
+            client_model.set_weights(global_model.get_weights())
+
+            print(len(array_ds_train), len(array_ds_train_copy))
+            random_c_p = random.randint(0, len(array_ds_train_copy) - 1)  # tutti gli indici
+            client_model.fit(array_ds_train_copy[random_c_p], epochs=1, validation_data=ds_test)
+            ds = array_ds_train_copy.pop(random_c_p)
+            lung.append(len(ds))
+            tot = tot + len(ds)
+
+            print(random_c_p, len(ds), tot)
+
+        weights = [client_model.get_weights() for client_model in client_models]
+
+        #AGGREGAZIONE
+        new_global_weight = [
+            sum((lung[n_c] / tot) * weights[n_c][p] for n_c in range(len(weights)))
+            for p in range(len(weights[0])) #tutti i pesi hanno stessa dimensione (pesi + bias) [livelli]
+        ]
+
+        global_model.set_weights(new_global_weight)
+        loss, s_cat_acc = global_model.evaluate(ds_test, verbose=1)
+        rounds.append(r+1)
+        accuracy.append(s_cat_acc)
+
+    loss, s_cat_acc = global_model.evaluate(ds_test, verbose=1)
+    print(f"Loss modello globale: {loss}") #indica quanto sbaglia e con quanta sicurezza
+    print(f"Sparse categorical accuracy modello globale: {s_cat_acc}") #percentuale di accuratezza della risposta
+
+
+    match pr:
+        case 0.1:
+            client1 = n_client_p
+            rounds1 = rounds
+            accuracy1 = accuracy
+        case 0.2:
+            client2 = n_client_p
+            rounds2 = rounds
+            accuracy2 = accuracy
+        case 0.5:
+            client3 = n_client_p
+            rounds3 = rounds
+            accuracy3 = accuracy
+        case 1:
+            client4 = n_client_p
+            rounds4 = rounds
+            accuracy4 = accuracy
+
+
+
+
+
+plt.figure(figsize=(8, 5))
+plt.plot(rounds1, accuracy1, marker='o', linestyle='-', color='blue', label=f'Test Accuracy with participation rate 0.1 and {client1} random Client per round')
+plt.plot(rounds2, accuracy2, marker='o', linestyle='-', color='green',label=f'Test Accuracy with participation rate 0.2 and {client2} random Client per round')
+plt.plot(rounds3, accuracy3, marker='o', linestyle='-', color='purple', label=f'Test Accuracy with participation rate 0.5 and {client3} random Client per round')
+plt.plot(rounds4, accuracy4, marker='o', linestyle='-', color='red', label=f'Test Accuracy with participation rate 1 and {client4} random Client per round')
+plt.xlabel('Round di Federated Learning')
+plt.ylabel('Sparse Categorical Accuracy (%)')
+plt.title(f"Andamento della Test Accuracy per ogni round di FederateLearning")
+plt.grid(True)
+plt.legend()
+plt.savefig('test_accuracy_rounds.png')
+plt.show()
+
