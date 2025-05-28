@@ -3,7 +3,7 @@
 
 Risultati degli esperimenti:
 
-1 Risultati dell'esecuzione del codice di Federate Learning con 2 client che si suddividono equamente il dataset
+1. Risultati dell'esecuzione del codice di Federate Learning con 2 client che si suddividono equamente il dataset
 
 n batch client 1:  234
 
@@ -17,7 +17,7 @@ Nel complesso, dato il numero di client, e il numero di batch assegnati ad ogni 
 
 
 
-2 Risultati dell'esecuzione del codice di Federate Learning con 5 client che si suddividono equamente il dataset
+2. Risultati dell'esecuzione del codice di Federate Learning con 5 client che si suddividono equamente il dataset
 
 n_client:  5
 
@@ -37,7 +37,7 @@ In questo esperimento si verifica un miglioramento dell'accuracy molto elevato p
 Si evince che con l'avanzare dei round l'accuracy aumenta sempre di meno rispetto al round precedente.
 
 
-3 Risultati dell'esecuzione del codice di Federate Learning con 5 client che si suddividono randomicamente il dataset
+3. Risultati dell'esecuzione del codice di Federate Learning con 5 client che si suddividono randomicamente il dataset
 
 n_client:  5
 
@@ -84,11 +84,11 @@ Di seguito riporto i grafici di 14 test con un numero di client che varia per og
   <img src="chart14.png" width="500" height="300" />
 </p>
 
-Dai grafici emerge che nell'apprendimento federato con pochi client i risultati sono molto simile e le curve di apprendimento sono più o meno costanti (ovviamente il test con 2 client resta sempre la curva più costante delle tre) e raggiungono alti tassi di accuratezza che si aggirano circa al 94%. Ciò che rende però interessanti questi test è che con l'aumentare del numero di client, per la seconda e terza versione, otteniamo risultati diversi. Nella seconda versione il numero di batch per client è equo tra tutti i client, e di conseguenza diminuisce sempre di più, all'aumentare del numero di client, mentre per la seconda versione del codice di simulazione di Federate Learning, il Set di dati è suddiviso randomicamente tra i vari client (più realistico) il che porta ad avere client con un numero elevato di batch, come 200/300 batch sui 469 batch totali per alcuni, ed altri client con anche 1 solo batch.  Al netto di questa suddivisione come si nota soiprattutto negli ultimi grafici, l'apprendimento del modello globale è più elevato quando sono presenti client con un elevato numero di batch, e di conseguenza la seconda versione di Federate Learning risulta come meno accurata rispetto alla terza, poichè con un numero elevato di client con un numero medio/basso di batch l'apprendimento del modello globale, e di conseguenza l'accuratezza del modello è peggiore rispetto, all'apprendimento con anche un solo client con un numero elevato di batch che consente una fase di training migliore e di conseguenza permette un update al center model più preciso ed efficace, dato che ogni client contribuisce con al calcolo dei nuovi weights in base al numero di batch che tratta (media pesata).
+Dai grafici emerge che nell'apprendimento federato con pochi client i risultati sono molto simile e le curve di apprendimento sono più o meno costanti (ovviamente il test con 2 client resta sempre la curva più costante delle tre) e raggiungono alti tassi di accuratezza che si aggirano circa al 94%. Ciò che rende però interessanti questi test è che con l'aumentare del numero di client, per la seconda e terza versione, otteniamo risultati diversi. Nella seconda versione il numero di batch per client è equo tra tutti i client, e di conseguenza diminuisce sempre di più, all'aumentare del numero di client, mentre per la terza versione del codice di simulazione di Federate Learning, il Set di dati è suddiviso randomicamente tra i vari client (più realistico) il che porta ad avere client con un numero elevato di batch, come 200/300 batch sui 469 batch totali per alcuni, ed altri client con anche 1 solo batch.  Al netto di questa suddivisione come si nota soprattutto negli ultimi grafici, l'apprendimento del modello globale è più elevato quando sono presenti client con un elevato numero di batch, e di conseguenza la seconda versione di Federate Learning risulta come meno accurata rispetto alla terza, poichè con un numero elevato di client che implica un numero medio/basso di batch per ogni client, l'apprendimento del modello globale, e quindi l'accuratezza del modello è peggiore rispetto, all'apprendimento con anche un solo client con un numero elevato di batch, il che consente una fase di training migliore e di conseguenza permette un update al center model più preciso ed efficace, dato che ogni client contribuisce con al calcolo dei nuovi weights in base al numero di batch che tratta (media pesata).
 
 
 
-Nei seguenti tre esperimenti, ho modificato i codici di FederateLearning con equal clients e random clients, e testato, suddividendo il dataset tra 10 client, durante la fase di training diversi valori di participation rate: 0.1, 0.2, 0.5 e 1
+Nei seguenti tre esperimenti, ho modificato i codici di FederateLearning con equal clients (dataset suddiviso equamente tra tutti i client, a tutti i client è assegnato lo stesso numero di batch) e random clients (dataset suddiviso randomicamente tra tutti i client, numero casuale di batch assegnati ad ogni client), e testato, suddividendo il dataset tra 10 client, durante la fase di training diversi valori di participation rate: 0.1, 0.2, 0.5 e 1
 
 <img src="pr1.png" width="500" height="300" />
 
@@ -97,4 +97,4 @@ In questo esempio vengono mostrati i 4 andamenti dell'accuracy con i diversi tas
 <img src="pr2.png" width="500" height="300" />
 <img src="pr3.png" width="500" height="300" />
 
-In questi esempi, a differenza del precedente il dataset è diviso randomicamente tra i vari client e infatti si nota un andamento randomico e meno lineare rispetto al primo esempio, questo è probabilmente dovuto al numero randomicità non solo dei client che partecipano durante ogni round ma anche della suddivisione del dataset, soprattutto per i round iniziali, mentre a lungo andare la accuracy si stabilizza e denota come nei casi con più elevato tasso di partecipation rate riflettonio una percentuale più elevata di accuracy
+In questi esempi, a differenza del precedente il dataset è diviso randomicamente tra i vari client e infatti si nota un andamento randomico e meno lineare rispetto al primo esempio, questo è probabilmente dovuto al numero randomicità non solo dei client che partecipano durante ogni round ma anche della suddivisione del dataset, soprattutto per i round iniziali, mentre a lungo andare la accuracy si stabilizza e denota come nei casi con più elevato tasso di partecipation rate riflettono una percentuale più elevata di accuracy
