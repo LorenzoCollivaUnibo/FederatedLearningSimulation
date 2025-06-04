@@ -88,7 +88,7 @@ Dai grafici emerge che nell'apprendimento federato con pochi client i risultati 
 
 
 
-Nei seguenti tre esperimenti, ho modificato i codici di FederateLearning con equal clients (dataset suddiviso equamente tra tutti i client, a tutti i client è assegnato lo stesso numero di batch) e random clients (dataset suddiviso randomicamente tra tutti i client, numero casuale di batch assegnati ad ogni client), e testato, suddividendo il dataset tra 10 client, durante la fase di training diversi valori di participation rate: 0.1, 0.2, 0.5 e 1
+Nei seguenti tre esperimenti, ho modificato i codici di FederateLearning con equal clients (dataset suddiviso equamente tra tutti i client, a tutti i client è assegnato lo stesso numero di batch, cioè se si considera un numero di batch totale pari a 469, di conseguenza un numero di batch assegnato ad ogni client pari a 47, che significa circa 6016 immagini per ogni client, dato che per batch si intende un gruppo di 128 elementi) e random clients (dataset suddiviso randomicamente tra tutti i client, numero casuale di batch assegnati ad ogni client, quindi un numero di immagini per client che varia più o meno da 18000 immagini assegnate ad un solo client, fino ad un singolo batch cioè solo 128 elementi), e testato, suddividendo il dataset tra 10 client, durante la fase di training diversi valori di participation rate: 0.1, 0.2, 0.5 e 1
 
 <img src="pr1.png" width="500" height="300" />
 
