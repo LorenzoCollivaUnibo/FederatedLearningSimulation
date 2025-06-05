@@ -98,3 +98,15 @@ In questo esempio vengono mostrati i 4 andamenti dell'accuracy con i diversi tas
 <img src="pr3.png" width="500" height="300" />
 
 In questi esempi, a differenza del precedente il dataset è diviso randomicamente tra i vari client e infatti si nota un andamento randomico e meno lineare rispetto al primo esempio, questo è probabilmente dovuto al numero randomicità non solo dei client che partecipano durante ogni round ma anche della suddivisione del dataset, soprattutto per i round iniziali, mentre a lungo andare la accuracy si stabilizza e denota come nei casi con più elevato tasso di partecipation rate riflettono una percentuale più elevata di accuracy
+
+
+
+
+
+
+Di seguito vengono mostrati tre esperimenti in cui il dataset viene suddiviso a seconda dei label degli elementi (non-IID partitioning), cioè ai client vengono assegnati gli elementi solo di alcune classi di tutto il dataset. Nel primo esempio vengono assegnati ai client tutte le classi del dataset, nel secondo esempio solo 5 classi randomiche del dataset e infine l'ultimo esperimento in cui viene assegnato ad ogni client solo una classe di elementi randomica tra le 10 disponibili (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+
+
+<img src="n-iid1.png" width="500" height="300" />
+<img src="n-iid2.png" width="500" height="300" />
+<img src="n-iid3.png" width="500" height="300" />
