@@ -1,0 +1,165 @@
+from collections import defaultdict
+import numpy as np
+import tensorflow as tf
+import os
+import random
+import matplotlib.pyplot as plt
+
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"  # per disattivare ONEDNN
+print(tf.__version__)
+
+# Caricamento dati MNIST
+(x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data(path='mnist.npz')
+assert x_train.shape == (60000, 28, 28)
+assert y_train.shape == (60000,)
+assert x_test.shape == (10000, 28, 28)
+assert y_test.shape == (10000,)
+
+
+ds_test = tf.data.Dataset.from_tensor_slices((x_test, y_test))  # crea un dataset dove ogni elemento è una tupla (x[i], y[i]) per il ds TEST
+ds_test = ds_test.batch(128)
+
+
+# Raggruppa i dati per etichetta
+lista_label = defaultdict(list)
+for idx, label in enumerate(y_train):
+    t = (x_train[idx], y_train[idx])
+    lista_label[label].append(t)
+
+# Mescola i dati all'interno di ogni classe
+for label in lista_label:
+    random.shuffle(lista_label[label])
+
+# Parametri
+n_client = int(input("Inserisci il numero di client: "))
+print("n_client:", n_client)
+
+num_classes_per_client = int(input("Inserisci il numero di classi per client: "))
+print("numero di classi per client:", n_client)
+
+all_classes = list(range(10))
+array_ds_train = []
+
+# Generazione dataset per ciascun client
+for client_id in range(n_client):
+    selected_classes = random.sample(all_classes, num_classes_per_client)
+    print(f"Client {client_id} ha le classi: {selected_classes}")
+
+    client_examples = []
+    for label in selected_classes:
+        client_examples.extend(lista_label[label])
+
+    # Dividi in immagini e label
+    x_list, y_list = zip(*client_examples)
+
+    # Converti in NumPy array e normalizza
+    x_array = np.array(x_list).astype(np.float32) / 255.0  # Normalizza
+    y_array = np.array(y_list).astype(np.int32)
+
+    # Crea il dataset TensorFlow
+    ds_client = tf.data.Dataset.from_tensor_slices((x_array, y_array)).batch(128)
+    array_ds_train.append(ds_client)
+
+# Stampa info
+for i, client in enumerate(array_ds_train):
+    print(f"Client {i} - Numero batch: {len(client)}")
+
+# CREO E ADDESTRO IL MODELLO
+# costruzione modello (rete neurale contenuta in model)
+def create_model():
+    model = tf.keras.models.Sequential(
+        [  # modello sequenziale (ogni layer riceve l'output del layer precedente) in keras
+            tf.keras.layers.Input(shape=(28, 28)),
+            # appiattisce l'input (immagine di dimensioni MNIST matrice 28x28) in un vettore unidimensionale di 784 elementi
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(128, activation='relu'),
+            # crea uno strato denso (connesso con il layer precedente) di 128 nodi e come funzione di attivazione la ReLU
+            tf.keras.layers.Dense(10)
+            # crea un altro strato denso con 10 nodi (classi finali del ds), no funzione di attivazione è l'output
+        ])
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(0.001),
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        # Softmax trasforma i logits in probabilità
+        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
+    )
+    return model
+
+
+rounds_number = 10
+
+p_rate = [1]
+client1 = 0
+rounds1 = []
+accuracy1 = []
+
+
+for pr in p_rate:
+
+    global_model = create_model()
+    client_models = []
+    rounds = []
+    accuracy = []
+
+    n_client_p = int(n_client * pr)
+    print(pr, n_client_p)
+
+    for client in range(n_client_p):
+        client_models.append(create_model())
+
+    loss, s_cat_acc = global_model.evaluate(ds_test, verbose=1)
+    print(f"Loss modello globale: {loss}")
+    print(f"Sparse categorical accuracy modello globale: {s_cat_acc}")
+
+    for r in range(rounds_number):
+
+        print(f"Round {r + 1}")
+        array_ds_train_copy = array_ds_train.copy()
+        lung = []
+        tot = 0
+
+        for i, client_model in enumerate(client_models):
+            client_model.set_weights(global_model.get_weights())
+
+            print(len(array_ds_train), len(array_ds_train_copy))
+            random_c_p = random.randint(0, len(array_ds_train_copy) - 1)  # tutti gli indici
+            client_model.fit(array_ds_train_copy[random_c_p], epochs=1, validation_data=ds_test)
+            ds = array_ds_train_copy.pop(random_c_p)
+            lung.append(len(ds))
+            tot = tot + len(ds)
+
+            print(random_c_p, len(ds), tot)
+
+        weights = [client_model.get_weights() for client_model in client_models]
+
+        # AGGREGAZIONE
+        new_global_weight = [
+            sum((lung[n_c] / tot) * weights[n_c][p] for n_c in range(len(weights)))
+            for p in range(len(weights[0]))  # tutti i pesi hanno stessa dimensione (pesi + bias) [livelli]
+        ]
+
+        global_model.set_weights(new_global_weight)
+        loss, s_cat_acc = global_model.evaluate(ds_test, verbose=1)
+        rounds.append(r + 1)
+        accuracy.append(s_cat_acc)
+
+    loss, s_cat_acc = global_model.evaluate(ds_test, verbose=1)
+    print(f"Loss modello globale: {loss}")  # indica quanto sbaglia e con quanta sicurezza
+    print(f"Sparse categorical accuracy modello globale: {s_cat_acc}")  # percentuale di accuratezza della risposta
+
+    client1 = n_client_p
+    rounds1 = rounds
+    accuracy1 = accuracy
+
+plt.figure(figsize=(8, 5))
+plt.plot(rounds1, accuracy1, marker='o', linestyle='-', color='blue',
+         label=f'Test Accuracy with participation rate 1 and {client1} Client per round')
+
+plt.xlabel('Round di Federated Learning')
+plt.ylabel('Sparse Categorical Accuracy (%)')
+plt.title(f"Andamento della Test Accuracy per ogni round di FederateLearning")
+plt.grid(True)
+plt.legend()
+plt.savefig('test_accuracy_rounds.png')
+plt.show()
+
