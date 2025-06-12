@@ -6,6 +6,12 @@ import matplotlib.pyplot as plt
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"  # per disattivare ONEDNN
 print(tf.__version__)
 
+# SEED GLOBALE
+seed = 40
+os.environ['PYTHONHASHSEED'] = str(seed)
+random.seed(seed)
+tf.random.set_seed(seed)
+
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data(path='mnist.npz')
 assert x_train.shape == (60000, 28, 28)  # 60000 immagini 28x28
 assert y_train.shape == (60000,)  # 60000 label
@@ -14,6 +20,7 @@ assert y_test.shape == (10000,)  # 10000 label
 
 ds_train = tf.data.Dataset.from_tensor_slices(
     (x_train, y_train))  # crea un dataset dove ogni elemento è una tupla (x[i], y[i]) per il ds TRAIN
+ds_train = ds_train.shuffle(buffer_size=60000, seed=seed)
 ds_test = tf.data.Dataset.from_tensor_slices(
     (x_test, y_test))  # crea un dataset dove ogni elemento è una tupla (x[i], y[i]) per il ds TEST
 
@@ -110,8 +117,10 @@ for pr in p_rate:
 
     for r in range(rounds_number):
 
+        random.seed(seed + r)
         print(f"Round {r + 1}")
         array_ds_train_copy = array_ds_train.copy()
+        random.shuffle(array_ds_train_copy)
         lung = []
         tot = 0
 
@@ -164,13 +173,13 @@ for pr in p_rate:
 
 plt.figure(figsize=(8, 5))
 plt.plot(rounds1, accuracy1, marker='o', linestyle='-', color='blue',
-         label=f'Test Accuracy with participation rate 0.1 and {client1} random Client per round')
+         label=f'Test Accuracy with participation rate 0.1 and {client1} equal Client per round')
 plt.plot(rounds2, accuracy2, marker='o', linestyle='-', color='green',
-         label=f'Test Accuracy with participation rate 0.2 and {client2} random Client per round')
+         label=f'Test Accuracy with participation rate 0.2 and {client2} equal Client per round')
 plt.plot(rounds3, accuracy3, marker='o', linestyle='-', color='purple',
-         label=f'Test Accuracy with participation rate 0.5 and {client3} random Client per round')
+         label=f'Test Accuracy with participation rate 0.5 and {client3} equal Client per round')
 plt.plot(rounds4, accuracy4, marker='o', linestyle='-', color='red',
-         label=f'Test Accuracy with participation rate 1 and {client4} random Client per round')
+         label=f'Test Accuracy with participation rate 1 and {client4} equal Client per round')
 plt.xlabel('Round di Federated Learning')
 plt.ylabel('Sparse Categorical Accuracy (%)')
 plt.title(f"Andamento della Test Accuracy per ogni round di FederateLearning")
