@@ -101,12 +101,11 @@ Dai grafici emerge che nell'apprendimento federato con pochi client i risultati 
 
 Nei seguenti tre esperimenti, ho modificato i codici di Federated Learning con equal clients (dataset suddiviso equamente tra tutti i client, a tutti i client è assegnato lo stesso numero di batch, cioè se si considera un numero di batch totale pari a 469, di conseguenza un numero di batch assegnato ad ogni client pari a 47, che significa circa 6016 immagini per ogni client, dato che per batch si intende un gruppo di 128 elementi) e random clients (dataset suddiviso randomicamente tra tutti i client, numero casuale di batch assegnati ad ogni client, quindi un numero di immagini per client che varia più o meno da 18000 immagini assegnate ad un solo client, fino ad un singolo batch cioè solo 128 elementi), e testato, suddividendo il dataset tra 10 client, durante la fase di training diversi valori di participation rate: 0.1, 0.2, 0.5 e 1
 
-<img src="pr1.png" width="500" height="300" />
+<img src="prEqual.png" width="500" height="300" />
 
 In questo esempio vengono mostrati i 4 andamenti dell'accuracy con i diversi tassi di participation rate, e con un dataset diviso equamente trai i vari client si nota un andamento più costante e più efficiente direttamente proporzionale al tasso di partecipation rate
 
-<img src="pr2.png" width="500" height="300" />
-<img src="pr3.png" width="500" height="300" />
+<img src="prRandom.png" width="500" height="300" />
 
 In questi esempi, a differenza del precedente il dataset è diviso randomicamente tra i vari client e infatti si nota un andamento randomico e meno lineare rispetto al primo esempio, questo è probabilmente dovuto al numero randomicità non solo dei client che partecipano durante ogni round ma anche della suddivisione del dataset, soprattutto per i round iniziali, mentre a lungo andare la accuracy si stabilizza e denota come nei casi con più elevato tasso di partecipation rate riflettono una percentuale più elevata di accuracy
 
