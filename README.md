@@ -117,4 +117,4 @@ In questi esempi, a differenza del precedente il dataset è diviso randomicament
 Di seguito vengono mostrati tre esperimenti in cui il dataset viene suddiviso a seconda dei label degli elementi (non-IID partitioning), cioè ai client vengono assegnati gli elementi solo di alcune classi di tutto il dataset. Nel primo esempio vengono assegnati ai client tutte le classi del dataset, nel secondo esempio solo 5 classi randomiche del dataset e infine l'ultimo esperimento in cui viene assegnato ad ogni client solo una classe di elementi randomica tra le 10 disponibili (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
 
 
-<img src="n-iid.png" width="500" height="300" />
+<img src="n-iidChartAll.png" width="500" height="300" />
