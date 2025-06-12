@@ -1,5 +1,8 @@
 # FederatedLearningSimulation
 
+In tutti gli esempi di seguito riportati il dataset viene suddiviso in batch, cioè suddivide tutti gli elementi in gruppi, per migliorare l'ottimizzazione e l'efficenza durante la fase di allenamento della rete. (I pesi vengono aggiornati dopo la fine dell'allenamento di ogni batch, rendendo l'allenamento più leggero e gestibile). La batch-size utilizzata per questi esperimenti è di 128 elementi per batch.
+
+
 
 Risultati degli esperimenti:
 
