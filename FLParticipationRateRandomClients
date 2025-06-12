@@ -3,6 +3,11 @@ import os
 import random
 import matplotlib.pyplot as plt
 
+# SEED GLOBALE
+seed = 42
+os.environ['PYTHONHASHSEED'] = str(seed)
+random.seed(seed)
+tf.random.set_seed(seed)
 
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0" #per disattivare ONEDNN
 print(tf.__version__)
@@ -17,6 +22,8 @@ assert y_test.shape == (10000,)          #10000 label
 
 
 ds_train = tf.data.Dataset.from_tensor_slices((x_train, y_train))  #crea un dataset dove ogni elemento è una tupla (x[i], y[i]) per il ds TRAIN
+ds_train = ds_train.shuffle(buffer_size=60000, seed=seed)
+
 ds_test = tf.data.Dataset.from_tensor_slices((x_test, y_test))     #crea un dataset dove ogni elemento è una tupla (x[i], y[i]) per il ds TEST
 
 ds_train = ds_train.batch(128)
@@ -28,10 +35,13 @@ print("n_client: ", n_client)
 num_batch_train_elements = len(ds_train)
 
 #NON divido il ds_test (serve per evaluate)
+random.seed(seed)
 array_ds_train = []
 ds = 0
 i = 0
 ran = 0
+
+
 
 for nclient in range(n_client - 1):
     random_num_batch = random.randint(ran, num_batch_train_elements - n_client + nclient )
@@ -106,12 +116,14 @@ for pr in p_rate:
 
     for r in range(rounds_number):
 
+        random.seed(seed + r)
         print(f"Round {r+1}")
         array_ds_train_copy = array_ds_train.copy()
+        random.shuffle(array_ds_train_copy)
         lung = []
         tot = 0
-        
-        
+
+
         for i,client_model in enumerate(client_models):
             client_model.set_weights(global_model.get_weights())
 
