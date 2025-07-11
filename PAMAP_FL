@@ -1,0 +1,270 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+import tensorflow as tf
+from sklearn.utils import shuffle
+import matplotlib.pyplot as plt
+
+
+# MODELLO
+def create_model():
+    model = tf.keras.Sequential([
+        tf.keras.Input(shape=(30, 40)),
+        tf.keras.layers.Conv1D(64, 3, activation='relu'),
+        tf.keras.layers.MaxPooling1D(2),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(19, activation='softmax')
+    ])
+
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(0.001),
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(),  # Softmax trasforma i logits in probabilità
+        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
+    )
+    return model
+
+
+def preprocessing_dataset(dataset):
+    scaler = MinMaxScaler()
+
+    # DEFINIZIONE DELLE COLONNE
+    columns = [
+        'timestamp', 'activity_id', 'heart_rate',
+        # 3 IMU sensors x (temp + 6x accel + 3x gyro + 3x mag + 4x or) = 51 columns
+        # Hand
+        'hand_temp',
+        'hand_acc_16_x', 'hand_acc_16_y', 'hand_acc_16_z',
+        'hand_acc_6_x', 'hand_acc_6_y', 'hand_acc_6_z',
+        'hand_gyro_x', 'hand_gyro_y', 'hand_gyro_z',
+        'hand_mag_x', 'hand_mag_y', 'hand_mag_z',
+        'hand_or_1', 'hand_or_2', 'hand_or_3', 'hand_or_4',  # INVALID
+        # Chest
+        'chest_temp',
+        'chest_acc_16_x', 'chest_acc_16_y', 'chest_acc_16_z',
+        'chest_acc_6_x', 'chest_acc_6_y', 'chest_acc_6_z',
+        'chest_gyro_x', 'chest_gyro_y', 'chest_gyro_z',
+        'chest_mag_x', 'chest_mag_y', 'chest_mag_z',
+        'chest_or_1', 'chest_or_2', 'chest_or_3', 'chest_or_4',  # INVALID
+        # Ankle
+        'ankle_temp',
+        'ankle_acc_16_x', 'ankle_acc_16_y', 'ankle_acc_16_z',
+        'ankle_acc_6_x', 'ankle_acc_6_y', 'ankle_acc_6_z',
+        'ankle_gyro_x', 'ankle_gyro_y', 'ankle_gyro_z',
+        'ankle_mag_x', 'ankle_mag_y', 'ankle_mag_z',
+        'ankle_or_1', 'ankle_or_2', 'ankle_or_3', 'ankle_or_4'  # INVALID
+    ]
+
+    cols_to_drop = [
+        'timestamp',  # Non serve al modello come informazione
+        'activity_id',
+        # è il label del modello, va separato (task del modello predire quale attività sta svolgendo (quale numero))
+        'hand_or_1', 'hand_or_2', 'hand_or_3', 'hand_or_4',
+        'chest_or_1', 'chest_or_2', 'chest_or_3', 'chest_or_4',
+        'ankle_or_1', 'ankle_or_2', 'ankle_or_3', 'ankle_or_4'
+    ]
+
+    # Mappo le label (activity ho degli id mancanti le mappo da 0 a 18 (19 attività))
+    original_labels = [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 16, 17, 18, 19, 20, 24, 0]
+    map_labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+    original_labels = sorted(original_labels)
+    label_map = {label: idx for idx, label in enumerate(original_labels)}
+
+    dataset.columns = columns
+    dataset['heart_rate'] = dataset['heart_rate'].ffill()
+    dataset = dataset.sort_values(by='activity_id').reset_index(drop=True)
+    dataset = dataset.dropna()
+    labels_mapped = dataset['activity_id'].map(label_map)
+    dataset = dataset.drop(columns=cols_to_drop)
+    dataset = pd.DataFrame(scaler.fit_transform(dataset), columns=dataset.columns)
+
+    return dataset,labels_mapped
+
+
+def sliding_window(data, l):
+    WINDOW_SIZE = 30
+    STEP = 30
+    X = []
+    y = []
+
+    # CREO LE SLIDING WINDOWS
+    for i in range(0, len(data) - WINDOW_SIZE, STEP):
+        window = data.iloc[i:i + WINDOW_SIZE].values  # (100, 40)
+        label = l.iloc[i + WINDOW_SIZE // 2]  # etichetta centrale della finestra mappate da 0 a 19
+
+        X.append(window)
+        y.append(label)
+
+    X = np.array(X)  # (num_finestra, 100, 40)
+    y = np.array(y)  # (num_finestra,)
+    print("lunghezze arr:  ", len(X), len(y))
+
+    return X, y
+
+def balanced(data_X, label_y):
+
+    label_unique, counts = np.unique(label_y, return_counts=True)
+    for val, c in zip(label_unique, counts):
+        print(f"Valore {val}: {c}")
+    min_count = np.min(counts)
+
+    X_balanced = []
+    y_balanced = []
+
+    for single_label in label_unique:
+        idx = np.where(label_y == single_label)[0]  # np.where restituisce sempre una tupla (anche per array 1D). Quindi [0] serve per estrarre l'array degli indici veri e propri
+        np.random.shuffle(idx)
+        selected_idx = idx[:min_count]
+
+        X_balanced.append(data_X[selected_idx])
+        y_balanced.append(label_y[selected_idx])
+
+    # Concatena i risultati
+    X_balanced = np.concatenate(X_balanced)
+    y_balanced = np.concatenate(y_balanced)
+
+    values, counts = np.unique(y_balanced, return_counts=True)
+    for val, c in zip(values, counts):
+        print(f"Valore {val}: {c}")
+
+    return X_balanced, y_balanced
+
+
+
+def split_dataset(X_balanced, y_balanced):
+    X_train_list, y_train_list = [], []
+    X_test_list, y_test_list = [], []
+
+    labels = np.unique(y_balanced)
+
+    for label in labels:
+        # Trova gli indici di tutte le finestre di questa classe
+        idx = np.where(y_balanced == label)[0]
+
+        # Shuffle interno alla classe
+        idx = shuffle(idx, random_state=42)
+
+        # Split 80% - 20%
+        split_point = int(len(idx) * 0.8)
+        train_idx = idx[:split_point]
+        test_idx = idx[split_point:]
+
+        # Appendi i dati corrispondenti
+        X_train_list.append(X_balanced[train_idx])
+        y_train_list.append(y_balanced[train_idx])
+        X_test_list.append(X_balanced[test_idx])
+        y_test_list.append(y_balanced[test_idx])
+
+    # Combina tutte le classi
+    X_train = np.concatenate(X_train_list)
+    y_train = np.concatenate(y_train_list)
+    X_test = np.concatenate(X_test_list)
+    y_test = np.concatenate(y_test_list)
+
+    # Shuffle finale del train e test set
+    X_train, y_train = shuffle(X_train, y_train, random_state=42)
+    X_test, y_test = shuffle(X_test, y_test, random_state=42)
+
+    # CREO IL DATASET
+    train = tf.data.Dataset.from_tensor_slices((X_train, y_train)).batch(32)
+    test = tf.data.Dataset.from_tensor_slices((X_test, y_test)).batch(32)
+
+    return train, test
+
+
+# FASE DI PREPROCESSING
+
+ds_p101 = pd.read_csv("Protocol/subject101.dat", sep=' ', header=None, na_values='NaN', )
+ds_o101 = pd.read_csv("Optional/subject101.dat", sep=' ', header=None, na_values='NaN', )
+ds_p102 = pd.read_csv("Protocol/subject102.dat", sep=' ', header=None, na_values='NaN', )
+ds_p103 = pd.read_csv("Protocol/subject103.dat", sep=' ', header=None, na_values='NaN', )
+ds_p104 = pd.read_csv("Protocol/subject104.dat", sep=' ', header=None, na_values='NaN', )
+ds_p105 = pd.read_csv("Protocol/subject105.dat", sep=' ', header=None, na_values='NaN', )
+ds_o105 = pd.read_csv("Optional/subject105.dat", sep=' ', header=None, na_values='NaN', )
+ds_p106 = pd.read_csv("Protocol/subject106.dat", sep=' ', header=None, na_values='NaN', )
+ds_o106 = pd.read_csv("Optional/subject106.dat", sep=' ', header=None, na_values='NaN', )
+ds_p107 = pd.read_csv("Protocol/subject107.dat", sep=' ', header=None, na_values='NaN', )
+ds_p108 = pd.read_csv("Protocol/subject108.dat", sep=' ', header=None, na_values='NaN', )
+ds_o108 = pd.read_csv("Optional/subject108.dat", sep=' ', header=None, na_values='NaN', )
+ds_p109 = pd.read_csv("Protocol/subject109.dat", sep=' ', header=None, na_values='NaN', )
+ds_o109 = pd.read_csv("Optional/subject109.dat", sep=' ', header=None, na_values='NaN', )
+
+ds_list = [
+    pd.concat([ds_p101, ds_o101]), ds_p102, ds_p103, ds_p104, pd.concat([ds_p105, ds_o105]),
+    pd.concat([ds_p106, ds_o106]), ds_p107, pd.concat([ds_p108, ds_o108]), pd.concat([ds_p109, ds_o109])
+]
+
+ds_list_pr = []
+labels_mapped_arr = []
+
+for ds in ds_list:
+    dst,labels_map = preprocessing_dataset(ds)
+    ds_list_pr.append(dst)
+    labels_mapped_arr.append(labels_map)
+
+ds_train_arr = []
+ds_test_arr = []
+
+for n,ds in enumerate(ds_list_pr):
+    X, y = sliding_window(ds,labels_mapped_arr[n])
+    ds_train, ds_test = split_dataset(X, y)
+    ds_train_arr.append(ds_train)
+    ds_test_arr.append(ds_test)
+
+
+# CREO IL MODELLO
+rounds_number = 15
+
+global_model = create_model()
+client_models = []
+rounds = []
+accuracy = []
+
+for ds in ds_list:
+    client_models.append(create_model())
+
+ds_global_test = pd.read_csv("FILE_Balanced.dat", sep=' ', header=None, na_values='NaN', )
+global_dataset_test,global_labels_map_test = preprocessing_dataset(ds_global_test)
+X_global_test, y_global_test = sliding_window(global_dataset_test,global_labels_map_test)
+ds_global_train = tf.data.Dataset.from_tensor_slices((X_global_test, y_global_test)).batch(32)
+
+
+loss, s_cat_acc = global_model.evaluate(ds_global_train, verbose=1)
+print(f"Loss modello globale: {loss}")
+print(f"Sparse categorical accuracy modello globale: {s_cat_acc}")
+
+for r in range(rounds_number):
+
+    print(f"Round {r + 1}")
+    for i, client_model in enumerate(client_models):
+        client_model.set_weights(global_model.get_weights())
+        client_model.fit(ds_train_arr[i], epochs=1, validation_data=ds_test_arr[i])
+
+    weights = [client_model.get_weights() for client_model in client_models]
+    lunghezze = [len(ds) for ds in ds_train_arr]
+    totale = sum(lunghezze)
+
+    # AGGREGAZIONE
+    new_global_weight = [
+        sum((lunghezze[n_c] / totale) * weights[n_c][p] for n_c in range(len(weights)))
+        for p in range(len(weights[0]))  # tutti i pesi hanno stessa dimensione (pesi + bias) [livelli]
+    ]
+
+    global_model.set_weights(new_global_weight)
+    loss, s_cat_acc = global_model.evaluate(ds_global_train, verbose=1)
+    rounds.append(r + 1)
+    accuracy.append(s_cat_acc)
+
+loss, s_cat_acc = global_model.evaluate(ds_global_train, verbose=1)
+print(f"Loss modello globale: {loss}")  # indica quanto sbaglia e con quanta sicurezza
+print(f"Sparse categorical accuracy modello globale: {s_cat_acc}")  # percentuale di accuratezza della risposta
+
+plt.figure(figsize=(8, 5))
+plt.plot(rounds, accuracy, marker='o', linestyle='-', color='blue', label='Test Accuracy')
+plt.xlabel('Round di Federated Learning')
+plt.ylabel('Sparse Categorical Accuracy (%)')
+plt.title(f"Andamento della Test Accuracy nel tempo 9 subjects")
+plt.grid(True)
+plt.legend()
+plt.savefig('test_accuracy_rounds.png')
+plt.show()
